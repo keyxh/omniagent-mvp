@@ -1,6 +1,6 @@
 # OmniAgent MVP
 
-**A minimal AI Agent framework in 1,494 lines of Python. Build terminal-based agents like Hermes and Claude Code with complete tool calling, error recovery, and multi-model support.**
+**A minimal AI Agent framework in ~2,300 lines of Python. Build terminal-based agents like Hermes and Claude Code with complete tool calling, error recovery, and multi-model support.**
 
 [中文文档](README_CN.md)
 
@@ -20,7 +20,8 @@ OmniAgent MVP is an AI Agent framework designed specifically for developers, ena
 
 - ✅ **Multi-Model Support** - OpenAI, Anthropic, local models (Ollama, LM Studio, vLLM)
 - ✅ **Complete Agent Loop** - Task decomposition, tool calling, result integration
-- ✅ **6 Built-in Tools** - shell, read_file, write_file, edit_file, grep, glob
+- ✅ **12 Built-in Tools** - shell, read_file, write_file, edit_file, grep, glob + 6 process management tools
+- ✅ **Background Process Support** - Run long tasks, interactive commands, development servers
 - ✅ **Error Recovery** - Intelligent retry mechanism, inspired by Hermes design
 - ✅ **Safety Guards** - Dangerous command detection, path safety checks
 - ✅ **Streaming Output** - Real-time AI response display
@@ -132,23 +133,24 @@ registry.register(
 
 ```
 omniagent-mvp/
-├── omni/              # Core engine (940 lines)
+├── omni/              # Core engine (~1,300 lines)
 │   ├── engine.py      # Agent main loop
 │   ├── client.py      # Multi-model client
 │   ├── brain.py       # Prompt generation
 │   ├── memory.py      # Context management (Hermes-style)
 │   ├── shield.py      # Safety checks
 │   └── recovery.py    # Error recovery
-├── engine/            # Tool system (449 lines)
+├── engine/            # Tool system (~1,000 lines)
 │   ├── registry.py    # Tool registry
 │   ├── filesystem.py  # File operations
 │   ├── search.py      # Search tools
-│   └── shell.py       # Shell tool
-├── cli.py             # CLI entry point (105 lines)
+│   ├── shell.py       # Shell tool
+│   └── process_manager.py  # Background process management
+├── cli.py             # CLI entry point
 └── requirements.txt   # Dependencies (only 5 packages)
 ```
 
-**Total: 1,494 lines of code**
+**Total: ~2,300 lines of code**
 
 ---
 
