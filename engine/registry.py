@@ -141,7 +141,15 @@ def get_registry() -> ToolRegistry:
 
 
 def _register_builtin_tools():
-    from .shell import shell_capability
+    from .shell import (
+        shell_capability,
+        process_poll_capability,
+        process_wait_capability,
+        process_read_log_capability,
+        process_send_input_capability,
+        process_kill_capability,
+        process_list_capability
+    )
     from .filesystem import read_file_capability, write_file_capability, edit_file_capability
     from .search import grep_capability, glob_capability
     
@@ -150,13 +158,21 @@ def _register_builtin_tools():
     registry.register(
         name="shell",
         handler=shell_capability,
-        description="Execute a shell command and return the output",
+        description="Execute a shell command and return the output. Supports interactive commands via stdin_input parameter. Use background=true for long-running processes.",
         parameters={
             "type": "object",
             "properties": {
                 "command": {
                     "type": "string",
                     "description": "The shell command to execute"
+                },
+                "stdin_input": {
+                    "type": "string",
+                    "description": "Optional input to send to the command's stdin (for interactive commands). Use newlines (\\n) to simulate multiple inputs."
+                },
+                "background": {
+                    "type": "boolean",
+                    "description": "Run command in background. Returns session_id for process management."
                 }
             },
             "required": ["command"]
@@ -263,6 +279,115 @@ def _register_builtin_tools():
             "required": ["pattern"]
         },
         category="search"
+    )
+    
+    registry.register(
+        name="process_poll",
+        handler=process_poll_capability,
+        description="Check status of a background process. Returns process state, output preview, and exit code if finished.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string",
+                    "description": "The session ID returned by shell with background=true"
+                }
+            },
+            "required": ["session_id"]
+        },
+        category="process"
+    )
+    
+    registry.register(
+        name="process_wait",
+        handler=process_wait_capability,
+        description="Wait for a background process to complete. Returns final output and exit code.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string",
+                    "description": "The session ID returned by shell with background=true"
+                },
+                "timeout": {
+                    "type": "integer",
+                    "description": "Maximum seconds to wait (default: 180)"
+                }
+            },
+            "required": ["session_id"]
+        },
+        category="process"
+    )
+    
+    registry.register(
+        name="process_read_log",
+        handler=process_read_log_capability,
+        description="Read output log from a background process. Useful for checking progress of long-running tasks.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string",
+                    "description": "The session ID returned by shell with background=true"
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Maximum number of lines to return (default: 200)"
+                }
+            },
+            "required": ["session_id"]
+        },
+        category="process"
+    )
+    
+    registry.register(
+        name="process_send_input",
+        handler=process_send_input_capability,
+        description="Send input to a running background process. Use for interactive commands that need user input.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string",
+                    "description": "The session ID returned by shell with background=true"
+                },
+                "data": {
+                    "type": "string",
+                    "description": "Input to send to the process. Use \\n for newline/enter."
+                }
+            },
+            "required": ["session_id", "data"]
+        },
+        category="process"
+    )
+    
+    registry.register(
+        name="process_kill",
+        handler=process_kill_capability,
+        description="Terminate a background process. Use when a process needs to be stopped.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string",
+                    "description": "The session ID returned by shell with background=true"
+                }
+            },
+            "required": ["session_id"]
+        },
+        category="process"
+    )
+    
+    registry.register(
+        name="process_list",
+        handler=process_list_capability,
+        description="List all background processes. Shows running and recently finished processes.",
+        parameters={
+            "type": "object",
+            "properties": {},
+            "required": []
+        },
+        category="process"
     )
 
 

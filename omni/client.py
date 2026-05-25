@@ -31,11 +31,13 @@ class OPCClient:
         base_url: Optional[str] = None,
         temperature: float = 0.7,
         stream: bool = True,
+        max_tokens: int = 8192,
     ):
         self.provider = provider.lower()
         self.model = model
         self.temperature = temperature
         self.stream = stream
+        self.max_tokens = max_tokens
         
         # 获取 API Key
         self.api_key = api_key or self._get_api_key()
@@ -65,10 +67,17 @@ class OPCClient:
     def _init_openai_compatible(self, base_url: Optional[str]):
         """初始化 OpenAI 兼容客户端"""
         from openai import OpenAI
+        import httpx
+        
+        http_client = httpx.Client(
+            proxies=None,
+            transport=httpx.HTTPTransport(retries=3),
+        )
         
         self.client = OpenAI(
             api_key=self.api_key,
             base_url=base_url,
+            http_client=http_client,
         )
         logger.info(f"OPC 客户端初始化: {self.provider}")
     
@@ -111,6 +120,7 @@ class OPCClient:
             "messages": api_messages,
             "temperature": self.temperature,
             "stream": self.stream,
+            "max_tokens": self.max_tokens,
         }
         
         if tools:
@@ -148,13 +158,18 @@ class OPCClient:
         """处理流式响应"""
         import sys
         content = ""
+        reasoning_content = ""
         tool_calls = []
+        tool_call_started = False
         
         for chunk in stream:
             if not chunk.choices:
                 continue
                 
             delta = chunk.choices[0].delta
+            
+            if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+                reasoning_content += delta.reasoning_content
             
             if delta.content:
                 content += delta.content
@@ -171,19 +186,31 @@ class OPCClient:
                                 "arguments": tc.function.arguments or "",
                             }
                         })
+                        if not tool_call_started:
+                            print("\n🔧 ", end="", flush=True)
+                            tool_call_started = True
                     else:
                         if tc.function.name:
                             tool_calls[tc.index]["function"]["name"] += tc.function.name
+                            print(tc.function.name, end="", flush=True)
                         if tc.function.arguments:
                             tool_calls[tc.index]["function"]["arguments"] += tc.function.arguments
+                            print(tc.function.arguments, end="", flush=True)
         
         if content:
             print()
+        if tool_call_started:
+            print()
         
-        return {
+        result = {
             "content": content,
             "tool_calls": tool_calls if tool_calls else None,
         }
+        
+        if reasoning_content:
+            result["reasoning_content"] = reasoning_content
+        
+        return result
     
     def _chat_anthropic(
         self,

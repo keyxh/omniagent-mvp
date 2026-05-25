@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能笔记系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .app {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 1200px;
+            height: 80vh;
+            display: flex;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .sidebar-header h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .btn-new {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-new:hover { transform: scale(1.02); }
+        .search-box {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .note-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid transparent;
+        }
+        .note-item:hover { transform: translateX(5px); }
+        .note-item.active { border-left-color: #667eea; background: #f0f4ff; }
+        .note-item h3 { font-size: 14px; color: #333; margin-bottom: 5px; }
+        .note-item p { font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .note-item .date { font-size: 11px; color: #999; margin-top: 5px; }
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .editor {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+        .editor-header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .editor-header input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .editor-header input:focus { outline: none; border-color: #667eea; }
+        .color-picker {
+            display: flex;
+            gap: 5px;
+        }
+        .color-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+        .color-btn.active { border-color: #333; }
+        .editor textarea {
+            flex: 1;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            line-height: 1.6;
+            resize: none;
+        }
+        .editor textarea:focus { outline: none; border-color: #667eea; }
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-save { background: #667eea; color: white; }
+        .btn-delete { background: #ff6b6b; color: white; }
+        .btn:hover { transform: scale(1.05); }
+        .empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #999;
+        }
+        .empty-icon { font-size: 60px; margin-bottom: 20px; }
+        .empty p { font-size: 18px; }
+        .colors { display: flex; gap: 8px; margin-top: 10px; }
+        .color-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .color-dot.active { border-color: #333; }
+        .color-default { background: #f8f9fa; }
+        .color-blue { background: #e3f2fd; }
+        .color-green { background: #e8f5e9; }
+        .color-yellow { background: #fff8e1; }
+        .color-pink { background: #fce4ec; }
+        .color-purple { background: #f3e5f5; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>📝 智能笔记</h1>
+                <button class="btn-new" onclick="createNote()">+ 新建笔记</button>
+            </div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索笔记..." oninput="searchNotes()">
+            </div>
+            <div class="notes-list" id="notesList"></div>
+        </div>
+        <div class="main">
+            <div class="editor" id="editor" style="display:none;">
+                <div class="editor-header">
+                    <input type="text" id="noteTitle" placeholder="笔记标题">
+                    <div class="colors">
+                        <div class="color-dot color-default active" data-color="default" onclick="setColor('default')"></div>
+                        <div class="color-dot color-blue" data-color="blue" onclick="setColor('blue')"></div>
+                        <div class="color-dot color-green" data-color="green" onclick="setColor('green')"></div>
+                        <div class="color-dot color-yellow" data-color="yellow" onclick="setColor('yellow')"></div>
+                        <div class="color-dot color-pink" data-color="pink" onclick="setColor('pink')"></div>
+                        <div class="color-dot color-purple" data-color="purple" onclick="setColor('purple')"></div>
+                    </div>
+                </div>
+                <textarea id="noteContent" placeholder="开始写笔记..."></textarea>
+                <div class="editor-actions">
+                    <button class="btn btn-save" onclick="saveNote()">保存</button>
+                    <button class="btn btn-delete" onclick="deleteNote()">删除</button>
+                </div>
+            </div>
+            <div class="empty" id="empty">
+                <div class="empty-icon">📝</div>
+                <p>选择或创建一个笔记</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        const API = 'http://localhost:5001/api';
+        let notes = [];
+        let currentNote = null;
+        let currentColor = 'default';
+
+        async function loadNotes() {
+            try {
+                const res = await fetch(`${API}/notes`);
+                const data = await res.json();
+                notes = data.notes || [];
+                renderNotes();
+            } catch (e) {
+                console.error('加载失败:', e);
+            }
+        }
+
+        function renderNotes(filtered = null) {
+            const list = document.getElementById('notesList');
+            const data = filtered || notes;
+            list.innerHTML = data.map(n => `
+                <div class="note-item ${currentNote && currentNote.id === n.id ? 'active' : ''}" 
+                     onclick="selectNote(${n.id})" style="background: var(--color-${n.color}, white)">
+                    <h3>${n.title || '无标题'}</h3>
+                    <p>${n.content || '无内容'}</p>
+                    <div class="date">${n.updated_at || n.created_at}</div>
+                </div>
+            `).join('');
+        }
+
+        async function createNote() {
+            try {
+                const res = await fetch(`${API}/notes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: '新笔记', content: '', color: 'default' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await loadNotes();
+                    selectNote(data.note.id);
+                }
+            } catch (e) {
+                console.error('创建失败:', e);
+            }
+        }
+
+        function selectNote(id) {
+            currentNote = notes.find(n => n.id === id);
+            if (currentNote) {
+                document.getElementById('editor').style.display = 'flex';
+                document.getElementById('empty').style.display = 'none';
+                document.getElementById('noteTitle').value = currentNote.title || '';
+                document.getElementById('noteContent').value = currentNote.content || '';
+                setColor(currentNote.color || 'default');
+                renderNotes();
+            }
+        }
+
+        async function saveNote() {
+            if (!currentNote) return;
+            try {
+                const res = await fetch(`${API}/notes/${currentNote.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: document.getElementById('noteTitle').value,
+                        content: document.getElementById('noteContent').value,
+                        color: currentColor
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await loadNotes();
+                    alert('保存成功!');
+                }
+            } catch (e) {
+                console.error('保存失败:', e);
+            }
+        }
+
+        async function deleteNote() {
+            if (!currentNote || !confirm('确定删除?')) return;
+            try {
+                const res = await fetch(`${API}/notes/${currentNote.id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    currentNote = null;
+                    document.getElementById('editor').style.display = 'none';
+                    document.getElementById('empty').style.display = 'flex';
+                    await loadNotes();
+                }
+            } catch (e) {
+                console.error('删除失败:', e);
+            }
+        }
+
+        async function searchNotes() {
+            const q = document.getElementById('searchInput').value;
+            if (!q) { renderNotes(); return; }
+            try {
+                const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                renderNotes(data.notes);
+            } catch (e) {
+                console.error('搜索失败:', e);
+            }
+        }
+
+        function setColor(color) {
+            currentColor = color;
+            document.querySelectorAll('.color-dot').forEach(d => {
+                d.classList.toggle('active', d.dataset.color === color);
+            });
+        }
+
+        loadNotes();
+    </script>
+</body>
+</html>

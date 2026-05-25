@@ -57,6 +57,7 @@ class OmniEngine:
             api_key=api_key,
             base_url=base_url,
             stream=stream,
+            max_tokens=8192,
         )
         
         self.brain = Brain(working_dir=self.working_dir)
@@ -119,10 +120,13 @@ class OmniEngine:
                     continue
                 else:
                     final_response = response.get('content', '')
-                    self.messages.append({
+                    msg = {
                         "role": "assistant",
                         "content": final_response
-                    })
+                    }
+                    if response.get('reasoning_content'):
+                        msg["reasoning_content"] = response.get('reasoning_content')
+                    self.messages.append(msg)
                     
                     if not self.quiet:
                         elapsed = time.time() - self.start_time
@@ -181,11 +185,14 @@ class OmniEngine:
         
         tool_calls = response.get('tool_calls', [])
         
-        self.messages.append({
+        msg = {
             "role": "assistant",
             "content": response.get('content') or "",
             "tool_calls": tool_calls
-        })
+        }
+        if response.get('reasoning_content'):
+            msg["reasoning_content"] = response.get('reasoning_content')
+        self.messages.append(msg)
         
         for call in tool_calls:
             capability_name = call['function']['name']

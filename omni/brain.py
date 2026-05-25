@@ -62,20 +62,67 @@ class Brain:
 - ❌ 错误：`shell("grep -r 'pattern' .")`
 - ✅ 正确：`grep("pattern", ".")`
 
-### 2. 安全第一
+### 2. 交互式命令处理（重要！）
+**当遇到交互式命令时，使用后台进程模式：**
+
+- **后台运行** - 使用 `background: true` 启动后台进程
+- **发送输入** - 使用 `process_send_input` 向进程发送输入
+- **检查状态** - 使用 `process_poll` 或 `process_read_log` 查看输出
+
+**示例：**
+```python
+# 启动后台进程
+result = shell({"command": "python app.py", "background": true})
+session_id = result["session_id"]
+
+# 检查进程状态
+process_poll({"session_id": session_id})
+
+# 读取完整日志
+process_read_log({"session_id": session_id})
+
+# 向进程发送输入
+process_send_input({"session_id": session_id, "data": "yes\\n"})
+
+# 终止进程
+process_kill({"session_id": session_id})
+```
+
+### 3. 安全第一
 - 绝不执行危险操作（rm -rf, format 等）
 - 验证所有路径和命令
 - 保护敏感信息
 
-### 3. 高效执行
+### 4. 高效执行
 - 直接解决问题，避免不必要的步骤
 - 一次性完成任务，减少迭代
 - 并行使用多个工具（如果可能）
 
-### 4. 清晰沟通
+### 5. 清晰沟通
 - 简洁但完整地说明你在做什么
 - 解释关键决策
-- 报告重要进展和结果"""
+- 报告重要进展和结果
+
+### 6. 代码编写策略（重要！）
+**编写代码时必须遵循分模块原则：**
+
+- **分步骤创建** - 不要一次性写完所有代码
+- **先基础后功能** - 先创建基础结构，再逐步添加功能
+- **一个文件一次** - 每次只创建或修改一个文件
+- **测试后继续** - 创建关键文件后，先测试再继续
+
+**示例流程：**
+1. 创建项目基础结构（目录、配置文件）
+2. 创建数据模型或数据库初始化
+3. 创建核心功能模块（一个一个来）
+4. 创建 API 路由或接口
+5. 创建前端页面（如果需要）
+6. 测试和调试
+
+**禁止行为：**
+- ❌ 一次性写完整个后端（几百行代码）
+- ❌ 同时创建多个复杂文件
+- ❌ 不测试就继续添加功能"""
     
     def _get_environment_info(self) -> str:
         """环境信息"""
@@ -139,7 +186,8 @@ class Brain:
         tool_categories = {
             "文件操作": ["read_file", "write_file", "edit_file"],
             "搜索工具": ["grep", "glob"],
-            "系统工具": ["shell"]
+            "系统工具": ["shell"],
+            "进程管理": ["process_poll", "process_wait", "process_read_log", "process_send_input", "process_kill", "process_list"]
         }
         
         for category, tool_names in tool_categories.items():
@@ -159,5 +207,12 @@ class Brain:
         lines.append("- 文件操作：read_file → edit_file → write_file")
         lines.append("- 搜索操作：grep（内容搜索）、glob（文件名搜索）")
         lines.append("- 批量操作：可以连续调用多个工具")
+        lines.append("\n### 后台进程管理")
+        lines.append("- **启动后台任务**: shell({\"command\": \"...\", \"background\": true})")
+        lines.append("- **检查进度**: process_poll(session_id) 或 process_read_log(session_id)")
+        lines.append("- **发送输入**: process_send_input(session_id, \"input\\n\")")
+        lines.append("- **等待完成**: process_wait(session_id)")
+        lines.append("- **终止进程**: process_kill(session_id)")
+        lines.append("- **适用场景**: 长时间运行的服务、需要交互的命令、开发服务器等")
         
         return "\n".join(lines)

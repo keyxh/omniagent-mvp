@@ -58,13 +58,28 @@ class Shield:
         """检查路径安全性"""
         try:
             full_path = Path(path).resolve()
-            working_dir_resolved = self.working_dir.resolve()
+            path_str = str(full_path).lower()
             
-            # 检查是否在工作目录内
-            try:
-                full_path.relative_to(working_dir_resolved)
-            except ValueError:
-                return False, "路径在工作目录外"
+            # 检查危险的系统路径（使用字符串匹配，避免 Windows 路径解析问题）
+            dangerous_prefixes = [
+                '/etc/',
+                '/sys/',
+                '/proc/',
+                'c:\\windows\\',
+                'c:\\system32\\',
+            ]
+            
+            for prefix in dangerous_prefixes:
+                if path_str.startswith(prefix):
+                    return False, f"危险路径: {prefix}"
+            
+            # 检查是否是系统根目录（Linux）
+            if path_str == '/':
+                return False, "危险路径: /"
+            
+            # 检查是否是 Windows 系统目录
+            if path_str in ['c:\\windows', 'c:\\system32']:
+                return False, f"危险路径: {path_str}"
             
             return True, None
             

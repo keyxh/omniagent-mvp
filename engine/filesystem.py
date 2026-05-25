@@ -36,11 +36,24 @@ def write_file_capability(args: Dict, working_dir: Path) -> Dict:
         
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
+        # 显示内容预览（前 500 字符）
+        preview_length = 500
+        if len(content) > preview_length:
+            preview = content[:preview_length] + f"\n... (还有 {len(content) - preview_length} 字符)"
+        else:
+            preview = content
+        
+        print(f"\n📝 写入文件: {path}")
+        print(f"📊 大小: {len(content)} 字符, {len(content.splitlines())} 行")
+        print(f"👀 内容预览:\n{'-' * 60}\n{preview}\n{'-' * 60}\n")
+        
         file_path.write_text(content, encoding='utf-8')
         
         return {
             "path": str(file_path),
             "size": len(content),
+            "lines": len(content.splitlines()),
+            "preview": preview,
             "success": True
         }
     except Exception as e:
